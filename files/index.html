@@ -73,8 +73,8 @@
 
         var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
         var resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
-        // var fragTexCoordLocation = gl.getVaryingLocation(program, "v_texcoord");
         var vertTexCoordLocation = gl.getAttribLocation(program, "a_texcoord");
+
         var textureUniformLocation = gl.getUniformLocation(program, "u_texture");
 
 
@@ -83,30 +83,57 @@
 
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
+
+        // Rectangle (0,0) , (0, 300), (300,300), (300,0)
         var positions = [
-             10, 20,
-             80, 20,
-             10, 30,
-             10, 30,
-             80, 20,
-             80, 30,
+             0, 0,
+             0, 300,
+             300, 300,
+
+             300, 300,
+             300, 0,
+             0, 0,
            ];
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
         var texCoords = [
                   0,0,
-                  330,0,
-                  330,370,
+                  0,1,
+                  1,1,
 
-                  330,370,
-                  0,370,
+                  1,1,
+                  1,0,
                   0,0
                 ];
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
 
-        // rendering code starts here
+
+        // Create a texture.
+        var texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+
+        // Fill the texture with a 1x1 blue pixel.
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+             new Uint8Array([255, 0, 0, 255]));
+
+        // Asynchronously load an image
+        var image = new Image();
+        image.src = "cropped2.png";
+        image.addEventListener('load', function() {
+             console.log(image.width);
+             console.log(image.height);
+
+             // Now that the image has loaded make copy it to the texture.
+             gl.bindTexture(gl.TEXTURE_2D, texture);
+             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, image);
+             gl.generateMipmap(gl.TEXTURE_2D);
+             doTheRender();
+           });
+      }
+
+   function doTheRender () {
 
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
@@ -115,8 +142,12 @@
 
         gl.useProgram(program);
 
+        // fill uniform values with canvas dimensions
         gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
 
+        // unfiform specifying which texture to use.
+        // use texture 0 - how do we make our texture into texture 0?
+        gl.uniform1i(textureUniformLocation, 0);
 
         // Position information
         gl.enableVertexAttribArray(positionAttributeLocation);
@@ -126,8 +157,10 @@
         //                     buffer, size, type, normalize, stride, offset
         gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0)
 
-        // Texture coordinate information
+        // turn on tex coord attribute (?????)
         gl.enableVertexAttribArray(vertTexCoordLocation);
+        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+
         // bind the texture coordinate buffer
         gl.vertexAttribPointer(vertTexCoordLocation, 2, gl.FLOAT, false, 0, 0);
 
@@ -138,11 +171,11 @@
         var count = 6;
         gl.drawArrays(primitiveType, offset, count);
 
-
       }
+
  </script>
 
 
- <image src="Full.png" />
+ <image src="cropped2.png" />
 </body>
 
